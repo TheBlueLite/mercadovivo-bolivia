@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MercadoVivo Bolivia - Monitoreo de Precios y Tienda</title>
+    <!-- Chart.js para gráficos de tendencia de precios -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #16803c;
+            --primary-dark: #0d5c2b;
+            --secondary: #ff8a00;
+            --accent: #ffd54f;
+            --bg: #f6f8f5;
+            --surface: #ffffff;
+            --text: #18231c;
+            --text-muted: #68736c;
+            --border: #e2e8e3;
+            --shadow: 0 10px 30px rgba(20, 55, 31, .08);
+            --radius: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Encabezado */
+        header {
+            padding: .8rem 2rem;
+            background: rgba(22,128,60,.97);
+            backdrop-filter: blur(12px);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            position: relative;
+        }
+
+        .logo {
+            font-size: 1.35rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Menú Desplegable del Logo */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 120%;
+            left: 0;
+            background-color: var(--surface);
+            color: var(--text);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            width: 240px;
+            overflow: hidden;
+            z-index: 110;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--border);
+        }
+
+        .nav-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .region-select, .type-select {
+            padding: 0.65rem 0.9rem;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.85rem;
+            background-color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .cart-btn, .action-nav-btn {
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 0.65rem 1rem;
+            border-radius: 13px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            box-shadow: 0 5px 14px rgba(0,0,0,.12);
+        }
+
+        .action-nav-btn {
+            background-color: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.35);
+        }
+
+        .action-nav-btn:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            background-image: linear-gradient(
+                rgba(15, 35, 18, 0.78), 
+                rgba(27, 94, 32, 0.85)
+            ), url('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 5.5rem 1.5rem 4.8rem;
+            text-align: center;
+            margin-bottom: 0;
+            box-shadow: inset 0 -10px 15px rgba(0,0,0,0.15);
+        }
+
+        .hero-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.1rem, 5vw, 4rem);
+            line-height: 1.05;
+            font-weight: 800;
+            margin: 0 auto 0.9rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            max-width: 900px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto 1.2rem auto;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            opacity: 0.95;
+        }
+
+        .inflation-badge {
+            display: inline-block;
+            background-color: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: .8rem;
+            flex-wrap: wrap;
+            margin-top: 1.4rem;
+        }
+
+        .hero-btn {
+            border: 0;
+            border-radius: 12px;
+            padding: .8rem 1.2rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .hero-btn.primary {
+            background: #fff;
+            color: var(--primary-dark);
+        }
+
+        .hero-btn.secondary {
+            background: rgba(255,255,255,.16);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,.35);
+        }
+
+        /* Layout principal */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            flex: 1;
+        }
+
+        /* Sección de Estadísticas */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: -1.6rem auto 1.7rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 1.4rem;
+            color: var(--primary-dark);
+        }
+
+        .stat span {
+            font-size: .8rem;
+            color: var(--text-muted);
+        }
+
+        /* Encabezados de Sección */
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+            margin: 1.5rem 0 1rem;
+        }
+
+        .section-heading h2 {
+            font-size: 1.55rem;
+        }
+
+        .section-heading p {
+            color: var(--text-muted);
+            font-size: .9rem;
+        }
+
+        /* Banners de Promociones */
+        .promo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.7rem;
+        }
+
+        .promo {
+            min-height: 145px;
+            border-radius: 18px;
+            padding: 1.3rem;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            box-shadow: var(--shadow);
+        }
+
+        .promo::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(0,0,0,.7), rgba(0,0,0,.1));
+        }
+
+        .promo > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .promo h3 {
+            font-size: 1.15rem;
+            margin-bottom: .25rem;
+        }
+
+        .promo p {
+            font-size: .83rem;
+            max-width: 230px;
+            opacity: .94;
+        }
+
+        .promo button {
+            margin-top: .75rem;
+            border: 0;
+            border-radius: 9px;
+            padding: .45rem .75rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Filtros y Búsqueda */
+        .controls {
+            background-color: var(--surface);
+            padding: 1rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: .75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(22,128,60,.1);
+        }
+
+        .category-filters {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.2rem;
+        }
+
+        .chip {
+            padding: .45rem .85rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: none;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+
+        .chip.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Grid de Productos */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+            gap: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .product-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .product-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 35px rgba(20,55,31,.13);
+        }
+
+        .product-img {
+            height: 180px;
+            position: relative;
+            background: #f1f5f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .product-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #fff;
+            color: var(--primary-dark);
+            padding: .3rem .55rem;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 800;
+            box-shadow: 0 4px 12px rgba(0,0,0,.1);
+        }
+
+        .history-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0,0,0,0.65);
+            color: white;
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 6px;
+            backdrop-filter: blur(2px);
+        }
+
+        .product-info {
+            padding: 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-title {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            min-height: 2.5em;
+        }
+
+        .product-category {
+            display: inline-block;
+            align-self: flex-start;
+            background: #eef7ef;
+            color: var(--primary-dark);
+            border-radius: 999px;
+            padding: .2rem .5rem;
+            font-size: 0.75rem;
+            margin-bottom: .65rem;
+        }
+
+        .price-container {
+            margin-top: auto;
+            margin-bottom: 0.8rem;
+        }
+
+        .old-price {
+            text-decoration: line-through;
+            color: #9aa19c;
+            font-size: .8rem;
+            margin-right: .4rem;
+        }
+
+        .current-price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+        }
+
+        .add-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: .65rem;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: .2s;
+        }
+
+        .add-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            background: #fff;
+            border: 1px dashed var(--border);
+            border-radius: 16px;
+        }
+
+        /* Beneficios */
+        .benefits {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .benefit {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.2rem;
+            display: flex;
+            gap: .8rem;
+            align-items: flex-start;
+        }
+
+        .benefit-icon {
+            font-size: 1.7rem;
+        }
+
+        .benefit h3 {
+            font-size: 1rem;
+            margin-bottom: .2rem;
+        }
+
+        .benefit p {
+            color: var(--text-muted);
+            font-size: .82rem;
+        }
+
+        /* Ventanas Modales */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--surface);
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 480px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 70px rgba(0,0,0,.25);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .submit-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        .qty-controls button {
+            border: 1px solid var(--border);
+            background: #f5f7f5;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .remove-btn {
+            border: 0;
+            background: none;
+            color: #b3261e;
+            cursor: pointer;
+            margin-left: .4rem;
+        }
+
+        .checkout-btn {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: #17351f;
+            color: #fff;
+            padding: .9rem 1.1rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.2);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: .3s;
+            z-index: 500;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Pie de página (Footer) */
+        footer {
+            background-color: #1a251c;
+            color: #d1d5db;
+            padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+            margin-top: 3rem;
+            border-top: 4px solid var(--primary);
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-col h3, .footer-col h4 {
+            color: white;
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+        }
+
+        .school-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 0.5rem;
+        }
+
+        .school-icon {
+            font-size: 2rem;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        @media(max-width:850px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .promo-grid, .benefits { grid-template-columns: 1fr; }
+            header { padding: .8rem 1rem; }
+            .logo { font-size: 1.05rem; }
+        }
+
+        @media(max-width:600px) {
+            .nav-controls .region-select, .nav-controls .type-select { max-width: 110px; }
+            .hero { padding: 4rem 1rem 3.5rem; }
+            .hero h1 { font-size: 2.25rem; }
+            .stats { margin-top: -1rem; }
+            .section-heading { align-items: flex-start; flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo" onclick="toggleDropdown()">
+                🛒 MercadoVivo Bolivia <span style="font-size: 0.8rem;">▼</span>
+            </div>
+            <div class="dropdown-menu" id="dropdownMenu">
+                <div class="dropdown-item" onclick="openModal('authModal')">👤 Iniciar Sesión / Registrarse</div>
+                <div class="dropdown-item" onclick="openModal('adminModal')">⚙️ Panel Administrador</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="openModal('reportModal')">📢 Reportar Precio de Zona</div>
+                <div class="dropdown-item" onclick="scrollToFooter()">ℹ️ Sobre Nosotros</div>
+            </div>
+        </div>
+
+        <div class="nav-controls">
+            <!-- Selector Tipo de Mercado -->
+            <select class="type-select" id="marketTypeSelect" onchange="updatePrices()">
+                <option value="popular" selected>Mercado Popular</option>
+                <option value="super">Supermercado</option>
+            </select>
+
+            <!-- Selector Departamento -->
+            <select class="region-select" id="departmentSelect" onchange="updatePrices()">
+                <option value="LP">La Paz</option>
+                <option value="CB">Cochabamba</option>
+                <option value="SC" selected>Santa Cruz</option>
+                <option value="OR">Oruro</option>
+                <option value="PT">Potosí</option>
+                <option value="TJ">Tarija</option>
+                <option value="CH">Chuquisaca</option>
+                <option value="BE">Beni</option>
+                <option value="PD">Pando</option>
+            </select>
+
+            <button class="action-nav-btn" onclick="openModal('budgetModal')">🧮 Presupuesto</button>
+
+            <button class="cart-btn" onclick="openModal('cartModal')">
+                <span>🛒</span> <span id="cartCount">0</span>
+            </button>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Precios Justos en Tiempo Real</h1>
+            <p>Monitoreo nacional de canasta familiar adaptado a cada departamento</p>
+            <div class="inflation-badge">📊 Precios de referencia actualizados • +8.5% ajuste estimado</div>
+            <div class="hero-actions">
+                <button class="hero-btn primary" onclick="document.getElementById('productGrid').scrollIntoView({behavior:'smooth'})">🛍️ Ver productos</button>
+                <button class="hero-btn secondary" onclick="openModal('cartModal')">🛒 Ver mi carrito</button>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <section class="stats">
+            <div class="stat"><strong>24/7</strong><span>Consulta de precios</span></div>
+            <div class="stat"><strong>+20</strong><span>Productos disponibles</span></div>
+            <div class="stat"><strong>9</strong><span>Departamentos</span></div>
+            <div class="stat"><strong>100%</strong><span>Compra digital</span></div>
+        </section>
+
+        <section>
+            <div class="section-heading">
+                <div><h2>🔥 Ofertas destacadas</h2><p>Encuentra productos para tu hogar a precios especiales.</p></div>
+            </div>
+            <div class="promo-grid">
+                <div class="promo" style="background-image:url('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80')">
+                    <h3>Frutas y verduras</h3><p>Productos frescos para tu mesa.</p>
+                    <button onclick="filterCategory('Frutas/Verduras', document.querySelectorAll('.chip')[3])">Ver categoría</button>
+                </div>
+                <div class="promo" style="background-image:url('https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&w=900&q=80')">
+                    <h3>Carnes y lácteos</h3><p>Opciones esenciales para tu canasta familiar.</p>
+                    <button onclick="filterCategory('Carnes/Lácteos', document.querySelectorAll('.chip')[2])">Comprar ahora</button>
+                </div>
+                <div class="promo" style="background-image:url('https://images.unsplash.com/photo-1584473457493-17c4c24290c5?auto=format&fit=crop&w=900&q=80')">
+                    <h3>Despensa</h3><p>Arroz, aceite, harina, azúcar y mucho más.</p>
+                    <button onclick="filterCategory('Despensa', document.querySelectorAll('.chip')[1])">Explorar</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Buscar producto (ej: Arroz, Carne, Aceite)..." oninput="filterProducts()">
+            </div>
+            <div class="category-filters" id="categoryContainer">
+                <button class="chip active" onclick="filterCategory('todos', this)">Todos</button>
+                <button class="chip" onclick="filterCategory('Despensa', this)">Despensa</button>
+                <button class="chip" onclick="filterCategory('Carnes/Lácteos', this)">Carnes y Lácteos</button>
+                <button class="chip" onclick="filterCategory('Frutas/Verduras', this)">Frutas y Verduras</button>
+            </div>
+        </div>
+
+        <div class="section-heading">
+            <div><h2>🛒 Productos disponibles</h2><p>Haz clic en una tarjeta para consultar la tendencia histórica de precios.</p></div>
+        </div>
+        <div class="products-grid" id="productGrid"></div>
+
+        <section class="benefits">
+            <div class="benefit"><div class="benefit-icon">📍</div><div><h3>Precios por departamento</h3><p>Consulta valores ajustados a tu ubicación seleccionada.</p></div></div>
+            <div class="benefit"><div class="benefit-icon">💬</div><div><h3>Pedido por WhatsApp</h3><p>Arma tu carrito y envía el pedido directamente.</p></div></div>
+            <div class="benefit"><div class="benefit-icon">📈</div><div><h3>Historial de Tendencias</h3><p>Visualiza el comportamiento de precios en gráficos interactivos.</p></div></div>
+        </section>
+    </main>
+
+    <!-- Modal de Autenticación -->
+    <div class="modal" id="authModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Acceso a MercadoVivo</h2>
+                <button class="close-btn" onclick="closeModal('authModal')">&times;</button>
+            </div>
+            <form onsubmit="event.preventDefault(); alert('Sesión iniciada correctamente.'); closeModal('authModal');">
+                <div class="form-group">
+                    <label>Correo Electrónico</label>
+                    <input type="email" required placeholder="estudiante@ue.edu.bo">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="submit-btn">Iniciar Sesión</button>
+            </form>
+            <p style="text-align: center; margin-top: 1rem; font-size: 0.85rem;">
+                ¿No tienes cuenta? <a href="#" onclick="alert('Funcionalidad de registro abierta.');">Regístrate aquí</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Modal Panel Administrador -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Acceso Administrativo</h2>
+                <button class="close-btn" onclick="closeModal('adminModal')">&times;</button>
+            </div>
+            <form onsubmit="event.preventDefault(); alert('Acceso concedido al panel de control.'); closeModal('adminModal');">
+                <div class="form-group">
+                    <label>Usuario Administrador</label>
+                    <input type="text" required placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label>Clave de Seguridad</label>
+                    <input type="password" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="submit-btn" style="background-color: var(--secondary);">Entrar al Panel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Histórico de Precios (Chart.js) -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="chartTitle">Histórico de Precios</h2>
+                <button class="close-btn" onclick="closeModal('historyModal')">&times;</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Comportamiento visual de precios en meses recientes (Bs.)</p>
+            <canvas id="priceChart" width="400" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Modal Calculadora de Presupuesto -->
+    <div class="modal" id="budgetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Calculadora de Presupuesto</h2>
+                <button class="close-btn" onclick="closeModal('budgetModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>Ingresa tu presupuesto disponible (Bs.):</label>
+                <input type="number" id="budgetInput" placeholder="Ej: 150">
+            </div>
+            <button class="submit-btn" onclick="calculateBudgetCombo()">Calcular Canasta Sugerida</button>
+            <div id="budgetResults" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+        </div>
+    </div>
+
+    <!-- Modal Reporte Ciudadano -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Reportar Precio de Zona</h2>
+                <button class="close-btn" onclick="closeModal('reportModal')">&times;</button>
+            </div>
+            <form onsubmit="event.preventDefault(); alert('Gracias por tu reporte. Será auditado por el sistema.'); closeModal('reportModal');">
+                <div class="form-group">
+                    <label>Producto</label>
+                    <select required>
+                        <option value="">Selecciona un producto...</option>
+                        <option>Arroz Grano Oro (Kg)</option>
+                        <option>Aceite Comestible 1L</option>
+                        <option>Carne de Res (Kg)</option>
+                        <option>Leche Entera 1L</option>
+                        <option>Tomate Redondo (Kg)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Precio Observado (Bs.)</label>
+                    <input type="number" step="0.5" required placeholder="Ej: 12.00">
+                </div>
+                <div class="form-group">
+                    <label>Mercado / Establecimiento</label>
+                    <input type="text" required placeholder="Ej: Mercado Central">
+                </div>
+                <button type="submit" class="submit-btn">Enviar Reporte</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal del Carrito -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tu Carrito de Compras</h2>
+                <button class="close-btn" onclick="closeModal('cartModal')">&times;</button>
+            </div>
+            <div id="cartItems"></div>
+            <div style="margin-top: 1rem; text-align: right; font-weight: bold; font-size: 1.2rem;">
+                Total: <span id="cartTotal">0.00 Bs.</span>
+            </div>
+            <button class="checkout-btn" onclick="checkoutWhatsApp()">Pedir por WhatsApp</button>
+        </div>
+    </div>
+
+    <!-- Pie de Página (Footer) -->
+    <footer id="mainFooter">
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>MercadoVivo Bolivia</h3>
+                <p style="font-size: 0.85rem; color: #9ca3af;">Plataforma digital interactiva para el monitoreo y estabilización informativa de precios de la canasta familiar.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Estudiantes / Integrantes</h4>
+                <ul>
+                    <li>• Integrante 1 (Desarrollo Frontend)</li>
+                    <li>• Integrante 2 (Backend & Base de Datos)</li>
+                    <li>• Integrante 3 (Análisis de Datos & Logística)</li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Proyecto de Innovación</h4>
+                <div class="school-badge">
+                    <span class="school-icon">🏫</span>
+                    <div style="font-size: 0.85rem;">
+                        <strong>Unidad Educativa Isaac Maldonado Reque</strong><br>
+                        Proyecto Socio-Productivo (PSP)
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 MercadoVivo Bolivia - Desarrollado para la Unidad Educativa Isaac Maldonado Reque.
+        </div>
+    </footer>
+
+    <script>
+        const products = [
+            { id: 1, name: 'Arroz Grano Oro (Kg)', category: 'Despensa', icon: '🌾', basePrice: 10.50, image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=700&q=80', tag:'Básico', history: [8.5, 9.0, 9.8, 10.5] },
+            { id: 2, name: 'Aceite Comestible 1L', category: 'Despensa', icon: '🍾', basePrice: 14.00, image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=700&q=80', tag:'Popular', history: [12.0, 12.5, 13.5, 14.0] },
+            { id: 3, name: 'Carne de Res (Kg)', category: 'Carnes/Lácteos', icon: '🥩', basePrice: 38.00, image: 'https://images.unsplash.com/photo-1603048297172-c92544798d5a?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [34.0, 35.0, 36.5, 38.0] },
+            { id: 4, name: 'Leche Entera 1L', category: 'Carnes/Lácteos', icon: '🥛', basePrice: 6.50, image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=700&q=80', tag:'Diario', history: [6.0, 6.0, 6.2, 6.5] },
+            { id: 5, name: 'Tomate Redondo (Kg)', category: 'Frutas/Verduras', icon: '🍅', basePrice: 8.00, image: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [6.0, 10.0, 7.5, 8.0] },
+            { id: 6, name: 'Pollo Entero (Kg)', category: 'Carnes/Lácteos', icon: '🍗', basePrice: 15.50, image: 'https://images.unsplash.com/photo-1587593810167-a84920ea0781?auto=format&fit=crop&w=700&q=80', tag:'Oferta', history: [13.5, 14.0, 14.8, 15.5] },
+            { id: 7, name: 'Harina de Trigo (Kg)', category: 'Despensa', icon: '🌾', basePrice: 7.00, image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=700&q=80', tag:'Básico', history: [5.5, 6.0, 6.5, 7.0] },
+            { id: 8, name: 'Papa Holandesa (Arroba)', category: 'Frutas/Verduras', icon: '🥔', basePrice: 45.00, image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=700&q=80', tag:'Popular', history: [38.0, 40.0, 42.0, 45.0] },
+            { id: 9, name: 'Cebolla (Kg)', category: 'Frutas/Verduras', icon: '🧅', basePrice: 7.50, image: 'https://images.unsplash.com/photo-1508747703725-719777637510?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [6.0, 6.5, 7.0, 7.5] },
+            { id: 10, name: 'Plátano (Docena)', category: 'Frutas/Verduras', icon: '🍌', basePrice: 10.00, image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [8.0, 9.0, 9.5, 10.0] },
+            { id: 11, name: 'Azúcar (Kg)', category: 'Despensa', icon: '🧂', basePrice: 7.20, image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&w=700&q=80', tag:'Básico', history: [6.0, 6.5, 7.0, 7.2] },
+            { id: 12, name: 'Fideo (500 g)', category: 'Despensa', icon: '🍝', basePrice: 5.50, image: 'https://images.unsplash.com/photo-1551892374-ecf8754cf8b0?auto=format&fit=crop&w=700&q=80', tag:'Popular', history: [4.5, 5.0, 5.2, 5.5] },
+            { id: 13, name: 'Queso Fresco (Kg)', category: 'Carnes/Lácteos', icon: '🧀', basePrice: 32.00, image: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [28.0, 30.0, 31.0, 32.0] },
+            { id: 14, name: 'Huevos (Maple)', category: 'Carnes/Lácteos', icon: '🥚', basePrice: 28.00, image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=700&q=80', tag:'Diario', history: [24.0, 25.5, 27.0, 28.0] },
+            { id: 15, name: 'Manzana (Kg)', category: 'Frutas/Verduras', icon: '🍎', basePrice: 12.00, image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [10.0, 11.0, 11.5, 12.0] },
+            { id: 16, name: 'Zanahoria (Kg)', category: 'Frutas/Verduras', icon: '🥕', basePrice: 6.00, image: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?auto=format&fit=crop&w=700&q=80', tag:'Fresco', history: [4.5, 5.0, 5.5, 6.0] },
+            { id: 17, name: 'Sal (Kg)', category: 'Despensa', icon: '🧂', basePrice: 3.50, image: 'https://images.unsplash.com/photo-1518110925495-5fe2eae3b4c5?auto=format&fit=crop&w=700&q=80', tag:'Básico', history: [3.0, 3.2, 3.3, 3.5] },
+            { id: 18, name: 'Yogur Natural 1L', category: 'Carnes/Lácteos', icon: '🥛', basePrice: 9.50, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=700&q=80', tag:'Diario', history: [8.0, 8.5, 9.0, 9.5] }
+        ];
+
+        const regionalMultipliers = {
+            LP: 1.02, CB: 1.00, SC: 0.98, OR: 1.03,
+            PT: 1.05, TJ: 1.01, CH: 1.02, BE: 1.08, PD: 1.10
+        };
+
+        const inflationFactor = 1.085;
+        let cart = [];
+        let currentCategory = 'todos';
+        let chartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+        });
+
+        function toggleDropdown() {
+            const menu = document.getElementById('dropdownMenu');
+            menu.classList.toggle('show');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.logo') && !event.target.matches('.logo *')) {
+                const dropdowns = document.getElementsByClassName("dropdown-menu");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    let openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        function scrollToFooter() {
+            document.getElementById('mainFooter').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function calculatePrice(basePrice) {
+            const dept = document.getElementById('departmentSelect').value;
+            const marketType = document.getElementById('marketTypeSelect').value;
+            const multiplier = regionalMultipliers[dept] || 1.0;
+            const marketMultiplier = marketType === 'super' ? 1.15 : 1.0;
+            
+            return (basePrice * inflationFactor * multiplier * marketMultiplier).toFixed(2);
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            grid.innerHTML = '';
+
+            let visible = 0;
+            products.forEach(p => {
+                const matchesCategory = currentCategory === 'todos' || p.category === currentCategory;
+                const matchesSearch = p.name.toLowerCase().includes(search);
+
+                if (matchesCategory && matchesSearch) {
+                    visible++;
+                    const price = calculatePrice(p.basePrice);
+                    grid.innerHTML += `
+                        <div class="product-card" onclick="openChart(${p.id})">
+                            <div class="product-img">
+                                <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='${p.icon}'">
+                                <span class="product-badge">${p.tag}</span>
+                                <span class="history-tag">📈 Historial</span>
+                            </div>
+                            <div class="product-info">
+                                <div class="product-title">${p.name}</div>
+                                <div class="product-category">${p.category}</div>
+                                <div class="price-container">
+                                    <span class="old-price">${(parseFloat(price)*1.06).toFixed(2)} Bs.</span>
+                                    <span class="current-price">${price} Bs.</span>
+                                </div>
+                                <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id})">🛒 Agregar al carrito</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            if (!visible) grid.innerHTML = '<div class="empty-state"><div style="font-size:2.5rem">🔎</div><h3>No encontramos productos</h3><p>Prueba con otro nombre o cambia la categoría.</p></div>';
+        }
+
+        function openChart(productId) {
+            const product = products.find(p => p.id === productId);
+            document.getElementById('chartTitle').innerText = product.name;
+            openModal('historyModal');
+
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mayo', 'Junio', 'Julio', 'Agosto'],
+                    datasets: [{
+                        label: 'Precio Histórico (Bs.)',
+                        data: product.history,
+                        borderColor: '#16803c',
+                        backgroundColor: 'rgba(22, 128, 60, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#ff8a00'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function calculateBudgetCombo() {
+            const budget = parseFloat(document.getElementById('budgetInput').value);
+            const container = document.getElementById('budgetResults');
+
+            if (!budget || budget <= 0) {
+                container.innerHTML = '<p style="color:red;">Ingresa un monto válido.</p>';
+                return;
+            }
+
+            let currentTotal = 0;
+            let suggestedItems = [];
+
+            products.forEach(p => {
+                const price = parseFloat(calculatePrice(p.basePrice));
+                if (currentTotal + price <= budget) {
+                    currentTotal += price;
+                    suggestedItems.push({ name: p.name, price: price });
+                }
+            });
+
+            if (suggestedItems.length === 0) {
+                container.innerHTML = '<p>El presupuesto es muy bajo para los productos disponibles.</p>';
+                return;
+            }
+
+            let html = `<strong>Canasta Sugerida (Total: ${currentTotal.toFixed(2)} Bs.):</strong><ul style="margin-top:0.5rem; padding-left:1.2rem;">`;
+            suggestedItems.forEach(item => {
+                html += `<li>${item.name} - ${item.price.toFixed(2)} Bs.</li>`;
+            });
+            html += '</ul>';
+
+            container.innerHTML = html;
+        }
+
+        function updatePrices() {
+            renderProducts();
+            updateCartDisplay();
+        }
+
+        function filterCategory(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            renderProducts();
+        }
+
+        function filterProducts() {
+            renderProducts();
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const price = calculatePrice(product.basePrice);
+            const existing = cart.find(item => item.id === productId);
+
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...product, price: parseFloat(price), qty: 1 });
+            }
+            updateCartDisplay();
+            showToast(`${product.name} agregado al carrito`);
+        }
+
+        function updateCartDisplay() {
+            const count = cart.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cartCount').innerText = count;
+
+            const cartContainer = document.getElementById('cartItems');
+            cartContainer.innerHTML = '';
+            let total = 0;
+
+            cart.forEach(item => {
+                const itemTotal = item.price * item.qty;
+                total += itemTotal;
+                cartContainer.innerHTML += `
+                    <div class="cart-item">
+                        <div>
+                            <div><strong>${item.name}</strong></div>
+                            <small>${item.price.toFixed(2)} Bs. c/u</small>
+                        </div>
+                        <div class="qty-controls">
+                            <button onclick="changeQty(${item.id},-1)">−</button>
+                            <span>${item.qty}</span>
+                            <button onclick="changeQty(${item.id},1)">+</button>
+                            <strong>${itemTotal.toFixed(2)} Bs.</strong>
+                            <button class="remove-btn" onclick="removeFromCart(${item.id})">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('cartTotal').innerText = `${total.toFixed(2)} Bs.`;
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(x => x.id === id);
+            if (!item) return;
+            item.qty += delta;
+            if (item.qty <= 0) cart = cart.filter(x => x.id !== id);
+            updateCartDisplay();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(x => x.id !== id);
+            updateCartDisplay();
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            toast.textContent = '✓ ' + text;
+            toast.classList.add('show');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+        }
+
+        function checkoutWhatsApp() {
+            if (cart.length === 0) {
+                alert('El carrito está vacío');
+                return;
+            }
+            let message = "Hola, quisiera realizar el siguiente pedido desde MercadoVivo:%0A%0A";
+            cart.forEach(item => {
+                message += `- ${item.name} (x${item.qty}): ${(item.price * item.qty).toFixed(2)} Bs.%0A`;
+            });
+            const total = document.getElementById('cartTotal').innerText;
+            message += `%0A*Total: ${total}*`;
+            
+            window.open(`https://wa.me/?text=${message}`, '_blank');
+        }
+    </script>
+
+    <div class="toast" id="toast">Producto agregado al carrito</div>
+</body>
+</html>
