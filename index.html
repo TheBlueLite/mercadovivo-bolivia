@@ -753,6 +753,26 @@
             .stats { margin-top: -1rem; }
             .section-heading { align-items: flex-start; flex-direction: column; }
         }
+
+        /* Animación: Destacar actualización de precio */
+@keyframes priceUpdate {
+    0% {
+        transform: scale(1);
+        color: var(--primary-dark);
+    }
+    50% {
+        transform: scale(1.18);
+        color: var(--secondary);
+    }
+    100% {
+        transform: scale(1);
+        color: var(--primary-dark);
+    }
+}
+
+.price-updated {
+    animation: priceUpdate 0.5s ease-in-out;
+}
     </style>
 </head>
 <body>
