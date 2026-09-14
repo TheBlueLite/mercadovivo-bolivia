@@ -1213,7 +1213,7 @@
     const product = products.find(p => p.id === productId);
     const price = calculatePrice(product.basePrice);
     
-    // Obtiene el valor seleccionado en la casilla del Paso 3
+    // Obtiene el valor seleccionado en la casilla
     const qtyInput = document.getElementById(`qty-${productId}`);
     const selectedQty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
 
