@@ -1,1 +1,13 @@
-/* Estilos globales */
+{
+  "app_title": "Mercado Vivo Bolivia",
+  "nav_home": "Inicio",
+  "nav_map": "Mapa de Zonas",
+  "nav_report": "Reportar Precio",
+  "nav_help": "Tutorial",
+  "search_placeholder": "Buscar productos (ej. Tomate, Papa...)",
+  "cart_title": "Tu Carrito",
+  "cart_empty": "El carrito está vacío",
+  "btn_send_whatsapp": "Enviar pedido por WhatsApp",
+  "lang_es": "Español",
+  "lang_gn": "Guaraní"
+}
