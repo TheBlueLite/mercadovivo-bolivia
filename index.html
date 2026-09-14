@@ -1214,9 +1214,19 @@
         }
 
         function updatePrices() {
-            renderProducts();
-            updateCartDisplay();
-        }
+    renderProducts();
+    updateCartDisplay();
+
+    // Paso 4: Disparar feedback visual en los contenedores de precio
+    const priceElements = document.querySelectorAll('.current-price');
+    priceElements.forEach(el => {
+        el.classList.add('price-updated');
+        // Remover la clase al terminar la animación para reutilizarla
+        setTimeout(() => {
+            el.classList.remove('price-updated');
+        }, 500);
+    });
+}
 
         function filterCategory(cat, btn) {
             currentCategory = cat;
