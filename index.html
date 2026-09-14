@@ -1088,41 +1088,46 @@
         }
 
         function renderProducts() {
-            const grid = document.getElementById('productGrid');
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            grid.innerHTML = '';
+    const grid = document.getElementById('productGrid');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    grid.innerHTML = '';
 
-            let visible = 0;
-            products.forEach(p => {
-                const matchesCategory = currentCategory === 'todos' || p.category === currentCategory;
-                const matchesSearch = p.name.toLowerCase().includes(search);
+    let visible = 0;
+    products.forEach(p => {
+        const matchesCategory = currentCategory === 'todos' || p.category === currentCategory;
+        const matchesSearch = p.name.toLowerCase().includes(search);
 
-                if (matchesCategory && matchesSearch) {
-                    visible++;
-                    const price = calculatePrice(p.basePrice);
-                    grid.innerHTML += `
-                        <div class="product-card" onclick="openChart(${p.id})">
-                            <div class="product-img">
-                                <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='${p.icon}'">
-                                <span class="product-badge">${p.tag}</span>
-                                <span class="history-tag">📈 Historial</span>
-                            </div>
-                            <div class="product-info">
-                                <div class="product-title">${p.name}</div>
-                                <div class="product-category">${p.category}</div>
-                                <div class="price-container">
-                                    <span class="old-price">${(parseFloat(price)*1.06).toFixed(2)} Bs.</span>
-                                    <span class="current-price">${price} Bs.</span>
-                                </div>
-                                <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id})">🛒 Agregar al carrito</button>
-                            </div>
+        if (matchesCategory && matchesSearch) {
+            visible++;
+            const price = calculatePrice(p.basePrice);
+            grid.innerHTML += `
+                <div class="product-card" onclick="openChart(${p.id})">
+                    <div class="product-img">
+                        <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='${p.icon}'">
+                        <span class="product-badge">${p.tag}</span>
+                        <span class="history-tag">📈 Historial</span>
+                    </div>
+                    <div class="product-info">
+                        <div class="product-title">${p.name}</div>
+                        <div class="product-category">${p.category}</div>
+                        <div class="price-container">
+                            <span class="old-price">${(parseFloat(price)*1.06).toFixed(2)} Bs.</span>
+                            <span class="current-price">${price} Bs.</span>
                         </div>
-                    `;
-                }
-            });
-
-            if (!visible) grid.innerHTML = '<div class="empty-state"><div style="font-size:2.5rem">🔎</div><h3>No encontramos productos</h3><p>Prueba con otro nombre o cambia la categoría.</p></div>';
+                        <!-- Selección de Cantidad -->
+                        <div class="qty-select-container" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; gap: 0.5rem;" onclick="event.stopPropagation()">
+                            <label for="qty-${p.id}" style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">Cantidad:</label>
+                            <input type="number" id="qty-${p.id}" value="1" min="1" max="99" style="width: 70px; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 8px; text-align: center; font-weight: bold;">
+                        </div>
+                        <button class="add-btn" onclick="event.stopPropagation(); addToCart(${p.id})">🛒 Agregar al carrito</button>
+                    </div>
+                </div>
+            `;
         }
+    });
+
+    if (!visible) grid.innerHTML = '<div class="empty-state"><div style="font-size:2.5rem">🔎</div><h3>No encontramos productos</h3><p>Prueba con otro nombre o cambia la categoría.</p></div>';
+}
 
         function openChart(productId) {
             const product = products.find(p => p.id === productId);
@@ -1205,19 +1210,24 @@
         }
 
         function addToCart(productId) {
-            const product = products.find(p => p.id === productId);
-            const price = calculatePrice(product.basePrice);
-            const existing = cart.find(item => item.id === productId);
+    const product = products.find(p => p.id === productId);
+    const price = calculatePrice(product.basePrice);
+    
+    // Obtiene el valor seleccionado en la casilla del Paso 3
+    const qtyInput = document.getElementById(`qty-${productId}`);
+    const selectedQty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
 
-            if (existing) {
-                existing.qty++;
-            } else {
-                cart.push({ ...product, price: parseFloat(price), qty: 1 });
-            }
-            updateCartDisplay();
-            showToast(`${product.name} agregado al carrito`);
-        }
+    const existing = cart.find(item => item.id === productId);
 
+    if (existing) {
+        existing.qty += selectedQty;
+    } else {
+        cart.push({ ...product, price: parseFloat(price), qty: selectedQty });
+    }
+    
+    updateCartDisplay();
+    showToast(`${selectedQty}x ${product.name} agregado(s) al carrito`);
+}
         function updateCartDisplay() {
             const count = cart.reduce((sum, item) => sum + item.qty, 0);
             document.getElementById('cartCount').innerText = count;
